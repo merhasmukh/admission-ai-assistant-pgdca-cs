@@ -1,258 +1,2130 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Flask Chatbot</title>
+    <title>Admission AI Assistant</title>
 
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f7f6;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        * {
+            box-sizing: border-box;
             margin: 0;
+            padding: 0;
         }
 
-        #chat-container {
-            width: 400px;
-            max-width: 90%;
-            height: 500px;
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            display: flex;
-            flex-direction: column;
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #eff6ff;
+
+            --bg: #f5f7fb;
+            --card: #ffffff;
+            --text: #172033;
+            --muted: #64748b;
+            --border: #e2e8f0;
+
+            --sidebar: #ffffff;
+            --user-msg: #2563eb;
+            --bot-msg: #ffffff;
+
+            --success: #16a34a;
+            --danger: #dc2626;
+
+            --shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+        }
+
+        body.dark {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --border: #334155;
+            --sidebar: #111827;
+            --bot-msg: #1e293b;
+            --primary-light: #172554;
+        }
+
+        body {
+            font-family:
+                Inter,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                Arial,
+                sans-serif;
+
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
             overflow: hidden;
         }
 
-        #chat-header {
-            background-color: #007bff;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 1.1em;
+        /* ================================
+           APP LAYOUT
+        ================================= */
+
+        .app {
+            display: flex;
+            height: 100vh;
+            width: 100%;
         }
 
-        #chat-box {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
+        /* ================================
+           SIDEBAR
+        ================================= */
+
+        .sidebar {
+            width: 270px;
+            background: var(--sidebar);
+            border-right: 1px solid var(--border);
+
             display: flex;
             flex-direction: column;
+
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+
+        .brand {
+            padding: 22px 20px;
+            border-bottom: 1px solid var(--border);
+
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 44px;
+            height: 44px;
+
+            background: var(--primary);
+            color: white;
+
+            border-radius: 12px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .brand-info h2 {
+            font-size: 17px;
+            line-height: 1.2;
+        }
+
+        .brand-info span {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        /* New Chat */
+
+        .new-chat-container {
+            padding: 16px;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 12px 15px;
+
+            border: none;
+            border-radius: 10px;
+
+            background: var(--primary);
+            color: white;
+
+            font-size: 14px;
+            font-weight: 600;
+
+            cursor: pointer;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+
+            transition: 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Sidebar navigation */
+
+        .sidebar-section {
+            padding: 8px 14px;
+        }
+
+        .sidebar-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+
+            padding: 10px 11px;
+
+            border-radius: 8px;
+
+            cursor: pointer;
+
+            font-size: 14px;
+
+            color: var(--text);
+
+            transition: 0.2s;
+        }
+
+        .nav-item:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .nav-item.active {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Chat History */
+
+        .history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5px 14px;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-radius: 8px;
+
+            font-size: 13px;
+            color: var(--muted);
+
+            cursor: pointer;
+
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-item:hover {
+            background: var(--primary-light);
+            color: var(--text);
+        }
+
+        /* Sidebar footer */
+
+        .sidebar-footer {
+            border-top: 1px solid var(--border);
+            padding: 14px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
             gap: 10px;
         }
 
-        .message {
-            max-width: 75%;
-            padding: 10px 14px;
-            border-radius: 15px;
-            font-size: 0.95em;
-            line-height: 1.4;
+        .avatar {
+            width: 35px;
+            height: 35px;
+
+            border-radius: 50%;
+
+            background: var(--primary);
+            color: white;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-weight: 600;
         }
 
-        .user-message {
-            background-color: #007bff;
+        .user-info {
+            flex: 1;
+        }
+
+        .user-info strong {
+            display: block;
+            font-size: 13px;
+        }
+
+        .user-info span {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        /* ================================
+           MAIN
+        ================================= */
+
+        .main {
+            flex: 1;
+            min-width: 0;
+
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+
+        .topbar {
+            height: 68px;
+
+            background: var(--card);
+
+            border-bottom: 1px solid var(--border);
+
+            display: flex;
+            align-items: center;
+
+            padding: 0 22px;
+
+            gap: 15px;
+        }
+
+        .menu-btn {
+            display: none;
+
+            border: none;
+            background: transparent;
+
+            font-size: 22px;
+            cursor: pointer;
+
+            color: var(--text);
+        }
+
+        .assistant-info {
+            flex: 1;
+        }
+
+        .assistant-info h3 {
+            font-size: 16px;
+        }
+
+        .assistant-status {
+            font-size: 12px;
+            color: var(--success);
+
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+
+            border-radius: 50%;
+
+            background: var(--success);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 7px;
+        }
+
+        .icon-btn {
+            width: 38px;
+            height: 38px;
+
+            border: 1px solid var(--border);
+            border-radius: 8px;
+
+            background: var(--card);
+
+            color: var(--text);
+
+            cursor: pointer;
+
+            font-size: 17px;
+        }
+
+        .icon-btn:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        /* ================================
+           CHAT AREA
+        ================================= */
+
+        .chat-wrapper {
+            flex: 1;
+            overflow-y: auto;
+
+            padding: 30px 20px;
+        }
+
+        .chat-content {
+            width: 100%;
+            max-width: 950px;
+
+            margin: auto;
+
+            display: flex;
+            flex-direction: column;
+
+            gap: 20px;
+        }
+
+        /* Welcome */
+
+        .welcome {
+            text-align: center;
+
+            max-width: 700px;
+
+            margin: 25px auto 10px;
+        }
+
+        .welcome-icon {
+            width: 65px;
+            height: 65px;
+
+            margin: auto;
+
+            border-radius: 18px;
+
+            background: var(--primary);
+
             color: white;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 30px;
+
+            box-shadow: var(--shadow);
+        }
+
+        .welcome h1 {
+            margin-top: 18px;
+            font-size: 28px;
+        }
+
+        .welcome p {
+            margin-top: 8px;
+
+            color: var(--muted);
+
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Quick actions */
+
+        .quick-actions {
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, 1fr);
+
+            gap: 12px;
+
+            margin-top: 22px;
+        }
+
+        .quick-card {
+            padding: 16px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 12px;
+
+            background: var(--card);
+
+            cursor: pointer;
+
+            text-align: left;
+
+            transition: 0.2s;
+        }
+
+        .quick-card:hover {
+            border-color: var(--primary);
+
+            transform: translateY(-2px);
+
+            box-shadow: var(--shadow);
+        }
+
+        .quick-icon {
+            font-size: 22px;
+            margin-bottom: 9px;
+        }
+
+        .quick-card strong {
+            display: block;
+
+            font-size: 13px;
+
+            margin-bottom: 4px;
+        }
+
+        .quick-card span {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        /* ================================
+           MESSAGES
+        ================================= */
+
+        .message-row {
+            display: flex;
+
+            gap: 10px;
+
+            max-width: 85%;
+        }
+
+        .message-row.user {
             align-self: flex-end;
-            border-bottom-right-radius: 2px;
+
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 34px;
+            height: 34px;
+
+            min-width: 34px;
+
+            border-radius: 10px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 15px;
+        }
+
+        .bot-avatar {
+            background: var(--primary);
+            color: white;
+        }
+
+        .user-avatar {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        body.dark .user-avatar {
+            background: #334155;
+            color: white;
+        }
+
+        .message {
+            padding: 12px 15px;
+
+            border-radius: 14px;
+
+            font-size: 14px;
+
+            line-height: 1.6;
+
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
 
         .bot-message {
-            background-color: #e9ecef;
-            color: #333;
-            align-self: flex-start;
-            border-bottom-left-radius: 2px;
+            background: var(--bot-msg);
+
+            border: 1px solid var(--border);
+
+            border-top-left-radius: 4px;
         }
 
-        #input-container {
+        .user-message {
+            background: var(--user-msg);
+
+            color: white;
+
+            border-top-right-radius: 4px;
+        }
+
+        .message strong {
+            font-weight: 650;
+        }
+
+        .message ul {
+            margin: 8px 0 8px 20px;
+        }
+
+        .message li {
+            margin: 4px 0;
+        }
+
+        .message a {
+            color: var(--primary);
+        }
+
+        .user-message a {
+            color: white;
+        }
+
+        /* Sources */
+
+        .sources {
+            margin-top: 12px;
+
+            padding-top: 10px;
+
+            border-top: 1px solid var(--border);
+        }
+
+        .sources-title {
+            font-size: 11px;
+
+            color: var(--muted);
+
+            margin-bottom: 7px;
+        }
+
+        .source {
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 5px;
+
+            padding: 5px 8px;
+
+            margin: 3px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 6px;
+
+            font-size: 11px;
+
+            color: var(--muted);
+        }
+
+        /* Typing */
+
+        .typing {
+            display: none;
+
+            align-items: center;
+
+            gap: 10px;
+        }
+
+        .typing-bubble {
+            padding: 12px 15px;
+
+            background: var(--bot-msg);
+
+            border: 1px solid var(--border);
+
+            border-radius: 14px;
+        }
+
+        .typing-dots {
             display: flex;
-            border-top: 1px solid #ddd;
-            padding: 10px;
-            background: #fff;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+
+            background: var(--muted);
+
+            border-radius: 50%;
+
+            animation: typing 1.3s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+
+            30% {
+                transform: translateY(-5px);
+            }
+        }
+
+        /* ================================
+           INPUT AREA
+        ================================= */
+
+        .input-area {
+            background: var(--card);
+
+            border-top: 1px solid var(--border);
+
+            padding: 14px 20px 17px;
+        }
+
+        .input-wrapper {
+            max-width: 950px;
+
+            margin: auto;
+        }
+
+        .input-box {
+            display: flex;
+            align-items: flex-end;
+
+            gap: 8px;
+
+            border: 1px solid var(--border);
+
+            background: var(--bg);
+
+            border-radius: 14px;
+
+            padding: 8px;
+
+            transition: 0.2s;
+        }
+
+        .input-box:focus-within {
+            border-color: var(--primary);
+
+            box-shadow:
+                0 0 0 3px rgba(37,99,235,0.1);
+        }
+
+        .input-tools {
+            display: flex;
+            gap: 3px;
+        }
+
+        .input-tool {
+            width: 36px;
+            height: 36px;
+
+            border: none;
+
+            background: transparent;
+
+            color: var(--muted);
+
+            border-radius: 8px;
+
+            cursor: pointer;
+
+            font-size: 17px;
+        }
+
+        .input-tool:hover {
+            background: var(--primary-light);
+
+            color: var(--primary);
         }
 
         #user-input {
             flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+
+            resize: none;
+
+            min-height: 36px;
+            max-height: 130px;
+
+            border: none;
+
             outline: none;
-            font-size: 16px;
+
+            background: transparent;
+
+            color: var(--text);
+
+            font-family: inherit;
+
+            font-size: 14px;
+
+            padding: 9px 5px;
+        }
+
+        #user-input::placeholder {
+            color: var(--muted);
         }
 
         #send-btn {
-            background-color: #007bff;
-            color: white;
+            width: 40px;
+            height: 40px;
+
             border: none;
-            padding: 10px 15px;
-            margin-left: 5px;
-            border-radius: 4px;
+
+            border-radius: 10px;
+
+            background: var(--primary);
+
+            color: white;
+
             cursor: pointer;
-            font-weight: bold;
+
+            font-size: 17px;
+
+            transition: 0.2s;
         }
 
         #send-btn:hover {
-            background-color: #0056b3;
+            background: var(--primary-dark);
         }
 
         #send-btn:disabled {
-            background-color: #999;
+            opacity: 0.5;
+
             cursor: not-allowed;
+        }
+
+        .input-footer {
+            text-align: center;
+
+            margin-top: 7px;
+
+            color: var(--muted);
+
+            font-size: 10px;
+        }
+
+        /* File preview */
+
+        .file-preview {
+            display: none;
+
+            margin-bottom: 8px;
+
+            padding: 8px 10px;
+
+            border: 1px solid var(--border);
+
+            border-radius: 8px;
+
+            background: var(--primary-light);
+
+            font-size: 12px;
+        }
+
+        .file-preview button {
+            float: right;
+
+            border: none;
+
+            background: transparent;
+
+            cursor: pointer;
+
+            color: var(--danger);
+        }
+
+        /* ================================
+           MOBILE
+        ================================= */
+
+        @media (max-width: 900px) {
+
+            .sidebar {
+                position: fixed;
+
+                left: 0;
+                top: 0;
+                bottom: 0;
+
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .menu-btn {
+                display: block;
+            }
+
+            .quick-actions {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+
+            .topbar {
+                padding: 0 12px;
+            }
+
+            .chat-wrapper {
+                padding: 18px 10px;
+            }
+
+            .input-area {
+                padding: 10px;
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .message-row {
+                max-width: 95%;
+            }
+
+            .welcome h1 {
+                font-size: 23px;
+            }
+
+            .header-actions .hide-mobile {
+                display: none;
+            }
+        }
+
+        /* Overlay */
+
+        .overlay {
+            display: none;
+
+            position: fixed;
+
+            inset: 0;
+
+            background: rgba(0,0,0,0.4);
+
+            z-index: 90;
+        }
+
+        .overlay.show {
+            display: block;
         }
     </style>
 </head>
 
 <body>
 
-    <div id="chat-container">
+<div class="app">
 
-        <div id="chat-header">
-            AI Chatbot Support
-        </div>
+    <!-- =====================================
+         SIDEBAR
+    ====================================== -->
 
-        <div id="chat-box">
-            <div class="message bot-message">
-                Hello! How can I help you today?
+    <aside class="sidebar" id="sidebar">
+
+        <div class="brand">
+
+            <div class="brand-logo">
+                AI
             </div>
+
+            <div class="brand-info">
+                <h2>Admission AI</h2>
+                <span>Student Support Assistant</span>
+            </div>
+
         </div>
 
-        <div id="input-container">
-            <input
-                type="text"
-                id="user-input"
-                placeholder="Type a message..."
-                autocomplete="off"
+
+        <div class="new-chat-container">
+
+            <button
+                class="new-chat-btn"
+                onclick="newChat()"
+            >
+                ＋ New Conversation
+            </button>
+
+        </div>
+
+
+        <div class="sidebar-section">
+
+            <div class="sidebar-title">
+                Admission Services
+            </div>
+
+            <div class="nav-item active">
+                <span class="nav-icon">💬</span>
+                AI Assistant
+            </div>
+
+            <div
+                class="nav-item"
+                onclick="quickQuestion('What are the available courses?')"
+            >
+                <span class="nav-icon">🎓</span>
+                Courses & Programs
+            </div>
+
+            <div
+                class="nav-item"
+                onclick="quickQuestion('What is the admission process?')"
+            >
+                <span class="nav-icon">📝</span>
+                Admission Process
+            </div>
+
+            <div
+                class="nav-item"
+                onclick="quickQuestion('What documents are required for admission?')"
+            >
+                <span class="nav-icon">📄</span>
+                Required Documents
+            </div>
+
+            <div
+                class="nav-item"
+                onclick="quickQuestion('Tell me about fees and scholarships.')"
+            >
+                <span class="nav-icon">💰</span>
+                Fees & Scholarships
+            </div>
+
+            <div
+                class="nav-item"
+                onclick="quickQuestion('What are the important admission dates?')"
+            >
+                <span class="nav-icon">📅</span>
+                Important Dates
+            </div>
+
+        </div>
+
+
+        <div class="sidebar-section">
+
+            <div class="sidebar-title">
+                Recent Conversations
+            </div>
+
+        </div>
+
+
+        <div
+            class="history"
+            id="history"
+        >
+            <!-- Chat history inserted by JS -->
+        </div>
+
+
+        <div class="sidebar-footer">
+
+            <div class="user-profile">
+
+                <div class="avatar">
+                    U
+                </div>
+
+                <div class="user-info">
+
+                    <strong>Student</strong>
+
+                    <span>Admission Enquiry</span>
+
+                </div>
+
+                <button
+                    class="icon-btn"
+                    onclick="toggleTheme()"
+                    title="Toggle theme"
+                >
+                    ◐
+                </button>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <div
+        class="overlay"
+        id="overlay"
+        onclick="closeSidebar()"
+    ></div>
+
+
+    <!-- =====================================
+         MAIN CONTENT
+    ====================================== -->
+
+    <main class="main">
+
+        <!-- TOP BAR -->
+
+        <header class="topbar">
+
+            <button
+                class="menu-btn"
+                onclick="openSidebar()"
+            >
+                ☰
+            </button>
+
+
+            <div class="assistant-info">
+
+                <h3>
+                    Admission AI Assistant
+                </h3>
+
+                <div class="assistant-status">
+
+                    <span class="status-dot"></span>
+
+                    Online
+
+                </div>
+
+            </div>
+
+
+            <div class="header-actions">
+
+                <button
+                    class="icon-btn hide-mobile"
+                    onclick="clearChat()"
+                    title="Clear conversation"
+                >
+                    🗑
+                </button>
+
+                <button
+                    class="icon-btn"
+                    onclick="toggleTheme()"
+                    title="Theme"
+                >
+                    ◐
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- CHAT -->
+
+        <section
+            class="chat-wrapper"
+            id="chat-wrapper"
+        >
+
+            <div
+                class="chat-content"
+                id="chat-box"
             >
 
-            <button id="send-btn">
-                Send
-            </button>
-        </div>
+                <!-- WELCOME -->
 
-    </div>
+                <div
+                    class="welcome"
+                    id="welcome"
+                >
 
-    <script>
-        const chatBox = document.getElementById("chat-box");
-        const userInput = document.getElementById("user-input");
-        const sendBtn = document.getElementById("send-btn");
+                    <div class="welcome-icon">
+                        🎓
+                    </div>
 
-        // Add a message to the chat box
-        function appendMessage(text, sender) {
+                    <h1>
+                        Welcome to Admission AI
+                    </h1>
 
-            const messageDiv = document.createElement("div");
+                    <p>
+                        Your intelligent admission assistant.
+                        Ask questions about courses, eligibility,
+                        admission procedures, fees, scholarships,
+                        required documents and important dates.
+                    </p>
 
-            messageDiv.classList.add(
-                "message",
+
+                    <div class="quick-actions">
+
+                        <div
+                            class="quick-card"
+                            onclick="quickQuestion('What courses and programs are available?')"
+                        >
+
+                            <div class="quick-icon">
+                                🎓
+                            </div>
+
+                            <strong>
+                                Courses & Programs
+                            </strong>
+
+                            <span>
+                                Explore available programs
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            class="quick-card"
+                            onclick="quickQuestion('What is the admission process?')"
+                        >
+
+                            <div class="quick-icon">
+                                📝
+                            </div>
+
+                            <strong>
+                                Admission Process
+                            </strong>
+
+                            <span>
+                                Learn how to apply
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            class="quick-card"
+                            onclick="quickQuestion('What documents do I need for admission?')"
+                        >
+
+                            <div class="quick-icon">
+                                📄
+                            </div>
+
+                            <strong>
+                                Documents
+                            </strong>
+
+                            <span>
+                                Check required documents
+                            </span>
+
+                        </div>
+
+
+                        <div
+                            class="quick-card"
+                            onclick="quickQuestion('What are the fees and scholarship opportunities?')"
+                        >
+
+                            <div class="quick-icon">
+                                💰
+                            </div>
+
+                            <strong>
+                                Fees & Scholarships
+                            </strong>
+
+                            <span>
+                                Fees and financial support
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- TYPING INDICATOR -->
+
+                <div
+                    class="typing"
+                    id="typing"
+                >
+
+                    <div class="message-avatar bot-avatar">
+                        AI
+                    </div>
+
+                    <div class="typing-bubble">
+
+                        <div class="typing-dots">
+
+                            <span></span>
+                            <span></span>
+                            <span></span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================
+             INPUT AREA
+        ====================================== -->
+
+        <footer class="input-area">
+
+            <div class="input-wrapper">
+
+
+                <div
+                    class="file-preview"
+                    id="file-preview"
+                >
+
+                    📄
+                    <span id="file-name"></span>
+
+                    <button
+                        onclick="removeFile()"
+                    >
+                        ✕
+                    </button>
+
+                </div>
+
+
+                <div class="input-box">
+
+
+                    <div class="input-tools">
+
+                        <button
+                            class="input-tool"
+                            onclick="document.getElementById('file-input').click()"
+                            title="Upload document"
+                        >
+                            📎
+                        </button>
+
+                        <input
+                            type="file"
+                            id="file-input"
+                            hidden
+                            accept=".pdf,.doc,.docx,.txt"
+                            onchange="handleFile(event)"
+                        >
+
+
+                        <button
+                            class="input-tool"
+                            onclick="startVoiceInput()"
+                            title="Voice input"
+                        >
+                            🎤
+                        </button>
+
+                    </div>
+
+
+                    <textarea
+                        id="user-input"
+                        rows="1"
+                        placeholder="Ask about admissions, courses, fees, eligibility..."
+                        autocomplete="off"
+                    ></textarea>
+
+
+                    <button
+                        id="send-btn"
+                        onclick="sendMessage()"
+                        title="Send"
+                    >
+                        ➤
+                    </button>
+
+                </div>
+
+
+                <div class="input-footer">
+
+                    Admission AI can make mistakes.
+                    Please verify important admission information with the university.
+
+                </div>
+
+            </div>
+
+        </footer>
+
+    </main>
+
+</div>
+
+
+<script>
+
+    /* =========================================
+       GLOBAL VARIABLES
+    ========================================== */
+
+    const chatBox =
+        document.getElementById("chat-box");
+
+    const userInput =
+        document.getElementById("user-input");
+
+    const sendBtn =
+        document.getElementById("send-btn");
+
+    const typing =
+        document.getElementById("typing");
+
+    const welcome =
+        document.getElementById("welcome");
+
+    const chatWrapper =
+        document.getElementById("chat-wrapper");
+
+    const history =
+        document.getElementById("history");
+
+
+    let selectedFile = null;
+
+
+    /* =========================================
+       ADD MESSAGE
+    ========================================== */
+
+    function appendMessage(
+        text,
+        sender,
+        sources = []
+    ) {
+
+        welcome.style.display = "none";
+
+        const row =
+            document.createElement("div");
+
+        row.className =
+            `message-row ${sender}`;
+
+
+        const avatar =
+            document.createElement("div");
+
+        avatar.className =
+            `message-avatar ${
+                sender === "user"
+                    ? "user-avatar"
+                    : "bot-avatar"
+            }`;
+
+        avatar.textContent =
+            sender === "user"
+                ? "U"
+                : "AI";
+
+
+        const message =
+            document.createElement("div");
+
+        message.className =
+            `message ${
                 sender === "user"
                     ? "user-message"
                     : "bot-message"
+            }`;
+
+
+        /*
+         * Basic formatting.
+         * Replace with a proper Markdown parser
+         * if your backend returns Markdown.
+         */
+
+        message.innerHTML =
+            formatMessage(text);
+
+
+        /*
+         * Sources
+         */
+
+        if (
+            sender === "bot" &&
+            sources &&
+            sources.length > 0
+        ) {
+
+            const sourceDiv =
+                document.createElement("div");
+
+            sourceDiv.className =
+                "sources";
+
+
+            const title =
+                document.createElement("div");
+
+            title.className =
+                "sources-title";
+
+            title.textContent =
+                "Sources";
+
+            sourceDiv.appendChild(title);
+
+
+            sources.forEach(source => {
+
+                const sourceItem =
+                    document.createElement("span");
+
+                sourceItem.className =
+                    "source";
+
+                sourceItem.textContent =
+                    "📄 " + source;
+
+                sourceDiv.appendChild(
+                    sourceItem
+                );
+
+            });
+
+
+            message.appendChild(sourceDiv);
+
+        }
+
+
+        row.appendChild(avatar);
+
+        row.appendChild(message);
+
+        chatBox.insertBefore(
+            row,
+            typing
+        );
+
+
+        scrollToBottom();
+
+    }
+
+
+    /* =========================================
+       BASIC MESSAGE FORMATTER
+    ========================================== */
+
+    function formatMessage(text) {
+
+        if (!text) {
+            return "";
+        }
+
+
+        /*
+         * Escape HTML first
+         */
+
+        text = text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+
+
+        /*
+         * Bold
+         */
+
+        text =
+            text.replace(
+                /\*\*(.*?)\*\*/g,
+                "<strong>$1</strong>"
             );
 
-            messageDiv.textContent = text;
 
-            chatBox.appendChild(messageDiv);
+        /*
+         * Line breaks
+         */
 
-            // Scroll to the latest message
-            chatBox.scrollTop = chatBox.scrollHeight;
+        text =
+            text.replace(
+                /\n/g,
+                "<br>"
+            );
+
+
+        return text;
+
+    }
+
+
+    /* =========================================
+       SEND MESSAGE
+    ========================================== */
+
+    async function sendMessage() {
+
+        const messageText =
+            userInput.value.trim();
+
+
+        if (!messageText) {
+            return;
         }
 
 
-        // Send message to Flask backend
-        async function sendMessage() {
-
-            const messageText = userInput.value.trim();
-
-            // Do nothing if input is empty
-            if (!messageText) {
-                return;
-            }
-
-            // Display user's message
-            appendMessage(messageText, "user");
-
-            // Clear input box
-            userInput.value = "";
-
-            // Disable button while waiting
-            sendBtn.disabled = true;
-
-            try {
-
-                // Send request to Flask
-                const response = await fetch("/get_response", {
-
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        message: messageText
-                    })
-                });
+        appendMessage(
+            messageText,
+            "user"
+        );
 
 
-                // Check HTTP response
-                if (!response.ok) {
-                    throw new Error(
-                        `HTTP error: ${response.status}`
-                    );
-                }
+        userInput.value = "";
+
+        autoResize();
 
 
-                // Convert response to JSON
-                const data = await response.json();
+        sendBtn.disabled = true;
+
+        showTyping();
 
 
-                // Display bot response
-                appendMessage(
-                    data.reply,
-                    "bot"
+        try {
+
+            const response =
+                await fetch(
+                    "/get_response",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+                                message:
+                                    messageText
+                            })
+                    }
                 );
 
-            } catch (error) {
 
-                console.error("Error:", error);
+            if (!response.ok) {
 
-                // Display error message
-                appendMessage(
-                    "Sorry, something went wrong. Please try again.",
-                    "bot"
+                throw new Error(
+                    `HTTP ${response.status}`
                 );
 
-            } finally {
-
-                // Enable button again
-                sendBtn.disabled = false;
-
-                // Put cursor back in input
-                userInput.focus();
             }
+
+
+            const data =
+                await response.json();
+
+
+            hideTyping();
+
+
+            /*
+             * Expected backend:
+             *
+             * {
+             *     "reply": "...",
+             *     "sources": [...]
+             * }
+             */
+
+
+            appendMessage(
+                data.reply ||
+                data.response ||
+                "I could not generate a response.",
+                "bot",
+                data.sources || []
+            );
+
+
+            saveHistory(
+                messageText
+            );
+
+
+        }
+        catch (error) {
+
+            console.error(error);
+
+
+            hideTyping();
+
+
+            appendMessage(
+                "Sorry, I could not process your request. Please try again.",
+                "bot"
+            );
+
+        }
+        finally {
+
+            sendBtn.disabled = false;
+
+            userInput.focus();
+
         }
 
-
-        // Send when button is clicked
-        sendBtn.addEventListener("click", sendMessage);
+    }
 
 
-        // Send when Enter key is pressed
-        userInput.addEventListener("keydown", function (event) {
+    /* =========================================
+       QUICK QUESTIONS
+    ========================================== */
 
-            if (event.key === "Enter") {
-                sendMessage();
-            }
+    function quickQuestion(question) {
+
+        userInput.value =
+            question;
+
+        autoResize();
+
+        sendMessage();
+
+    }
+
+
+    /* =========================================
+       TYPING INDICATOR
+    ========================================== */
+
+    function showTyping() {
+
+        typing.style.display =
+            "flex";
+
+        scrollToBottom();
+
+    }
+
+
+    function hideTyping() {
+
+        typing.style.display =
+            "none";
+
+    }
+
+
+    /* =========================================
+       SCROLL
+    ========================================== */
+
+    function scrollToBottom() {
+
+        setTimeout(() => {
+
+            chatWrapper.scrollTop =
+                chatWrapper.scrollHeight;
+
+        }, 50);
+
+    }
+
+
+    /* =========================================
+       NEW CHAT
+    ========================================== */
+
+    function newChat() {
+
+        const messages =
+            chatBox.querySelectorAll(
+                ".message-row"
+            );
+
+
+        messages.forEach(message => {
+
+            message.remove();
 
         });
-    </script>
+
+
+        welcome.style.display =
+            "block";
+
+
+        hideTyping();
+
+
+        /*
+         * Optional backend endpoint
+         */
+
+        fetch("/new_chat", {
+            method: "POST"
+        }).catch(() => {});
+
+
+        userInput.focus();
+
+    }
+
+
+    /* =========================================
+       CLEAR CHAT
+    ========================================== */
+
+    function clearChat() {
+
+        if (
+            !confirm(
+                "Clear this conversation?"
+            )
+        ) {
+            return;
+        }
+
+
+        newChat();
+
+
+        /*
+         * Optional Flask endpoint
+         */
+
+        fetch("/clear_chat", {
+            method: "POST"
+        }).catch(() => {});
+
+    }
+
+
+    /* =========================================
+       CHAT HISTORY
+    ========================================== */
+
+    function saveHistory(message) {
+
+        const item =
+            document.createElement("div");
+
+        item.className =
+            "history-item";
+
+        item.textContent =
+            message;
+
+
+        item.onclick =
+            function () {
+
+                userInput.value =
+                    message;
+
+                autoResize();
+
+                userInput.focus();
+
+            };
+
+
+        history.prepend(item);
+
+
+        /*
+         * Keep only last 10
+         */
+
+        while (
+            history.children.length > 10
+        ) {
+
+            history.removeChild(
+                history.lastChild
+            );
+
+        }
+
+    }
+
+
+    /* =========================================
+       FILE UPLOAD
+    ========================================== */
+
+    function handleFile(event) {
+
+        const file =
+            event.target.files[0];
+
+
+        if (!file) {
+            return;
+        }
+
+
+        selectedFile =
+            file;
+
+
+        document.getElementById(
+            "file-name"
+        ).textContent =
+            file.name;
+
+
+        document.getElementById(
+            "file-preview"
+        ).style.display =
+            "block";
+
+    }
+
+
+    function removeFile() {
+
+        selectedFile = null;
+
+
+        document.getElementById(
+            "file-input"
+        ).value = "";
+
+
+        document.getElementById(
+            "file-preview"
+        ).style.display =
+            "none";
+
+    }
+
+
+    /* =========================================
+       VOICE INPUT
+    ========================================== */
+
+    function startVoiceInput() {
+
+        const SpeechRecognition =
+            window.SpeechRecognition ||
+            window.webkitSpeechRecognition;
+
+
+        if (!SpeechRecognition) {
+
+            alert(
+                "Voice input is not supported by this browser."
+            );
+
+            return;
+
+        }
+
+
+        const recognition =
+            new SpeechRecognition();
+
+
+        recognition.lang =
+            "en-IN";
+
+
+        recognition.interimResults =
+            false;
+
+
+        recognition.onstart =
+            function () {
+
+                userInput.placeholder =
+                    "Listening...";
+
+            };
+
+
+        recognition.onresult =
+            function (event) {
+
+                const text =
+                    event.results[0][0].transcript;
+
+
+                userInput.value +=
+                    text;
+
+
+                autoResize();
+
+            };
+
+
+        recognition.onerror =
+            function () {
+
+                console.error(
+                    "Voice recognition error"
+                );
+
+            };
+
+
+        recognition.onend =
+            function () {
+
+                userInput.placeholder =
+                    "Ask about admissions, courses, fees, eligibility...";
+
+            };
+
+
+        recognition.start();
+
+    }
+
+
+    /* =========================================
+       TEXTAREA AUTO RESIZE
+    ========================================== */
+
+    userInput.addEventListener(
+        "input",
+        autoResize
+    );
+
+
+    function autoResize() {
+
+        userInput.style.height =
+            "auto";
+
+
+        userInput.style.height =
+            Math.min(
+                userInput.scrollHeight,
+                130
+            ) + "px";
+
+    }
+
+
+    /* =========================================
+       ENTER KEY
+    ========================================== */
+
+    userInput.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (
+                event.key === "Enter" &&
+                !event.shiftKey
+            ) {
+
+                event.preventDefault();
+
+                sendMessage();
+
+            }
+
+        }
+    );
+
+
+    /* =========================================
+       THEME
+    ========================================== */
+
+    function toggleTheme() {
+
+        document.body.classList.toggle(
+            "dark"
+        );
+
+
+        localStorage.setItem(
+            "admission-ai-theme",
+            document.body.classList.contains(
+                "dark"
+            )
+                ? "dark"
+                : "light"
+        );
+
+    }
+
+
+    /*
+     * Restore theme
+     */
+
+    if (
+        localStorage.getItem(
+            "admission-ai-theme"
+        ) === "dark"
+    ) {
+
+        document.body.classList.add(
+            "dark"
+        );
+
+    }
+
+
+    /* =========================================
+       MOBILE SIDEBAR
+    ========================================== */
+
+    function openSidebar() {
+
+        document
+            .getElementById("sidebar")
+            .classList.add("open");
+
+
+        document
+            .getElementById("overlay")
+            .classList.add("show");
+
+    }
+
+
+    function closeSidebar() {
+
+        document
+            .getElementById("sidebar")
+            .classList.remove("open");
+
+
+        document
+            .getElementById("overlay")
+            .classList.remove("show");
+
+    }
+
+
+    /* =========================================
+       INITIAL FOCUS
+    ========================================== */
+
+    userInput.focus();
+
+</script>
 
 </body>
-
 </html>
